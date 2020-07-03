@@ -54,7 +54,7 @@ application& application::fit_tiks() {
       std::floor(std::log((view_y_max - view_y_min)) / std::log(10.0f)));
   for (int i = 0; i < 9; ++i) {
     const float new_y_tics = scales[i] * y_tics;
-    if ((view_x_max - view_x_min) / new_y_tics < y_tolerance) {
+    if ((view_y_max - view_y_min) / new_y_tics < y_tolerance) {
       y_tics = new_y_tics;
       break;
     }
@@ -72,6 +72,23 @@ application& application::execute() {
     mouse_y = mouse_pos.y;
     mouse_diff_x = mouse_x - old_mouse_x;
     mouse_diff_y = mouse_y - old_mouse_y;
+
+    if (window.hasFocus()) {
+      if (mouse_x >= plot_x_min && mouse_x < plot_x_max &&
+          mouse_y >= plot_y_min && mouse_y < plot_y_max) {
+        mouse_focus = PLOT_FOCUS;
+      } else if (mouse_x >= plot_x_min && mouse_x < plot_x_max &&
+                 mouse_y >= 0 && mouse_y < window.getSize().y) {
+        mouse_focus = X_AXIS_FOCUS;
+      } else if (mouse_x >= 0 && mouse_x < window.getSize().x &&
+                 mouse_y >= plot_y_min && mouse_y < plot_y_max) {
+        mouse_focus = Y_AXIS_FOCUS;
+      } else {
+        mouse_focus = NONE;
+      }
+    } else {
+      mouse_focus = NONE;
+    }
 
     process_events();
 
@@ -102,19 +119,35 @@ void application::process_events() {
         resize();
         break;
 
+      case sf::Event::MouseButtonPressed:
+        if (event.mouseButton.button == sf::Mouse::Left) {
+          mouse_click_focus = mouse_focus;
+        }
+        break;
+      case sf::Event::MouseButtonReleased:
+        if (event.mouseButton.button == sf::Mouse::Left) {
+          mouse_click_focus = NONE;
+        }
+        break;
+
       case sf::Event::MouseWheelMoved: {
-        auto scale_x = view_x_max - view_x_min;
-        auto origin_x = 0.5f * (view_x_max + view_x_min);
-        auto scale_y = view_y_max - view_y_min;
-        auto origin_y = 0.5f * (view_y_max + view_y_min);
         const float wheel_scale = exp(-event.mouseWheel.delta * 0.05f);
-        scale_x *= wheel_scale;
-        scale_y *= wheel_scale;
-        view_x_min = origin_x - 0.5f * scale_x;
-        view_x_max = origin_x + 0.5f * scale_x;
-        view_y_min = origin_y - 0.5f * scale_y;
-        view_y_max = origin_y + 0.5f * scale_y;
-        update = true;
+        if (mouse_focus == PLOT_FOCUS || mouse_focus == X_AXIS_FOCUS) {
+          auto scale_x = view_x_max - view_x_min;
+          auto origin_x = 0.5f * (view_x_max + view_x_min);
+          scale_x *= wheel_scale;
+          view_x_min = origin_x - 0.5f * scale_x;
+          view_x_max = origin_x + 0.5f * scale_x;
+          update = true;
+        }
+        if (mouse_focus == PLOT_FOCUS || mouse_focus == Y_AXIS_FOCUS) {
+          auto scale_y = view_y_max - view_y_min;
+          auto origin_y = 0.5f * (view_y_max + view_y_min);
+          scale_y *= wheel_scale;
+          view_y_min = origin_y - 0.5f * scale_y;
+          view_y_max = origin_y + 0.5f * scale_y;
+          update = true;
+        }
       } break;
 
       case sf::Event::KeyPressed:
@@ -127,25 +160,29 @@ void application::process_events() {
     }
   }
 
-  if (sf::Mouse::isButtonPressed(sf::Mouse::Left)) {
-    const auto move_x =
-        (view_x_max - view_x_min) * mouse_diff_x / (plot_x_max - plot_x_min);
-    const auto move_y =
-        (view_y_max - view_y_min) * mouse_diff_y / (plot_y_max - plot_y_min);
-    view_x_min -= move_x;
-    view_x_max -= move_x;
-    view_y_min += move_y;
-    view_y_max += move_y;
+  if (sf::Mouse::isButtonPressed(sf::Mouse::Left) && window.hasFocus()) {
+    if (mouse_click_focus == PLOT_FOCUS || mouse_click_focus == X_AXIS_FOCUS) {
+      const auto move_x =
+          (view_x_max - view_x_min) * mouse_diff_x / (plot_x_max - plot_x_min);
+      view_x_min -= move_x;
+      view_x_max -= move_x;
+    }
+    if (mouse_click_focus == PLOT_FOCUS || mouse_click_focus == Y_AXIS_FOCUS) {
+      const auto move_y =
+          (view_y_max - view_y_min) * mouse_diff_y / (plot_y_max - plot_y_min);
+      view_y_min += move_y;
+      view_y_max += move_y;
+    }
     update = true;
   }
 }
 
 void application::draw_plot_background() {
-  sf::RectangleShape plot_background;
-  plot_background.setSize({plot_x_max - plot_x_min, plot_y_max - plot_y_min});
-  plot_background.setPosition({plot_x_min, plot_y_min});
-  plot_background.setFillColor(plot_background_color);
-  window.draw(plot_background);
+  sf::RectangleShape rect;
+  rect.setSize({plot_x_max - plot_x_min, plot_y_max - plot_y_min});
+  rect.setPosition({plot_x_min, plot_y_min});
+  rect.setFillColor(plot_background_color);
+  window.draw(rect);
 }
 
 void application::draw_tiks() {
@@ -177,7 +214,7 @@ void application::draw_tiks() {
 
     } else {
       std::stringstream output{};
-      output << std::fixed << std::setprecision(2) << x;
+      output << std::defaultfloat /*<< std::setprecision(2)*/ << x;
 
       sf::Text text;
       text.setFont(font);
@@ -236,7 +273,7 @@ void application::draw_tiks() {
 
     } else {
       std::stringstream output{};
-      output << std::fixed << std::setprecision(2) << y;
+      output << std::defaultfloat /*<< std::setprecision(y_precision)*/ << y;
 
       sf::Text text;
       text.setFont(font);
@@ -322,13 +359,13 @@ void application::draw_function() {
 }
 
 void application::draw_plot_border() {
-  sf::RectangleShape plot_border;
-  plot_border.setSize({plot_x_max - plot_x_min, plot_y_max - plot_y_min});
-  plot_border.setPosition({plot_x_min, plot_y_min});
-  plot_border.setFillColor(sf::Color{0, 0, 0, 0});
-  plot_border.setOutlineThickness(plot_border_size);
-  plot_border.setOutlineColor(plot_border_color);
-  window.draw(plot_border);
+  sf::RectangleShape rect;
+  rect.setSize({plot_x_max - plot_x_min, plot_y_max - plot_y_min});
+  rect.setPosition({plot_x_min, plot_y_min});
+  rect.setFillColor(sf::Color{0, 0, 0, 0});
+  rect.setOutlineThickness(plot_border_size);
+  rect.setOutlineColor(plot_border_color);
+  window.draw(rect);
 }
 
 void application::render() {

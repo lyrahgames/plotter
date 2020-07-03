@@ -46,6 +46,14 @@ class application {
   int mouse_diff_x = 0;
   int mouse_diff_y = 0;
 
+  enum {
+    NONE,
+    PLOT_FOCUS,
+    X_AXIS_FOCUS,
+    Y_AXIS_FOCUS
+  } mouse_focus,
+      mouse_click_focus;
+
   float view_x_min;
   float view_x_max;
   float view_y_min;
@@ -70,6 +78,9 @@ class application {
   float y_tics = 0.5f;
   size_t x_m_tics = 4;
   size_t y_m_tics = 4;
+
+  size_t x_precision = 2;
+  size_t y_precision = 2;
 
   float line_size = 3;
   sf::Color line_color{sf::Color::Blue};
