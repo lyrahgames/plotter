@@ -35,6 +35,7 @@ application& application::fit_view() {
 
 application& application::fit_tiks() {
   float scales[] = {0.1f, 0.2f, 0.25f, 0.5f, 1.0f, 2.0f, 2.5f, 5.0f, 10.0f};
+  size_t mtics[] = {4, 3, 4, 4, 4, 3, 3, 4, 4};
 
   const float x_tolerance = (plot_x_max - plot_x_min) / 60.0f;
   x_tics = std::exp(
@@ -44,6 +45,7 @@ application& application::fit_tiks() {
     const float new_x_tics = scales[i] * x_tics;
     if ((view_x_max - view_x_min) / new_x_tics < x_tolerance) {
       x_tics = new_x_tics;
+      x_m_tics = mtics[i];
       break;
     }
   }
@@ -56,6 +58,7 @@ application& application::fit_tiks() {
     const float new_y_tics = scales[i] * y_tics;
     if ((view_y_max - view_y_min) / new_y_tics < y_tolerance) {
       y_tics = new_y_tics;
+      y_m_tics = mtics[i];
       break;
     }
   }
@@ -65,33 +68,9 @@ application& application::fit_tiks() {
 
 application& application::execute() {
   fit_view();
-
   while (window.isOpen()) {
-    const auto mouse_pos = sf::Mouse::getPosition(window);
-    mouse_x = mouse_pos.x;
-    mouse_y = mouse_pos.y;
-    mouse_diff_x = mouse_x - old_mouse_x;
-    mouse_diff_y = mouse_y - old_mouse_y;
-
-    if (window.hasFocus()) {
-      if (mouse_x >= plot_x_min && mouse_x < plot_x_max &&
-          mouse_y >= plot_y_min && mouse_y < plot_y_max) {
-        mouse_focus = PLOT_FOCUS;
-      } else if (mouse_x >= plot_x_min && mouse_x < plot_x_max &&
-                 mouse_y >= 0 && mouse_y < window.getSize().y) {
-        mouse_focus = X_AXIS_FOCUS;
-      } else if (mouse_x >= 0 && mouse_x < window.getSize().x &&
-                 mouse_y >= plot_y_min && mouse_y < plot_y_max) {
-        mouse_focus = Y_AXIS_FOCUS;
-      } else {
-        mouse_focus = NONE;
-      }
-    } else {
-      mouse_focus = NONE;
-    }
-
+    process_mouse();
     process_events();
-
     if (update) {
       fit_tiks();
       window.clear(background_color);
@@ -100,11 +79,35 @@ application& application::execute() {
     }
     // We have to draw every time, such that vsync will prevent full CPU usage.
     window.display();
-
-    old_mouse_x = mouse_x;
-    old_mouse_y = mouse_y;
   }
   return *this;
+}
+
+void application::process_mouse() {
+  old_mouse_x = mouse_x;
+  old_mouse_y = mouse_y;
+  const auto mouse_pos = sf::Mouse::getPosition(window);
+  mouse_x = mouse_pos.x;
+  mouse_y = mouse_pos.y;
+  mouse_diff_x = mouse_x - old_mouse_x;
+  mouse_diff_y = mouse_y - old_mouse_y;
+
+  if (window.hasFocus()) {
+    if (mouse_x >= plot_x_min && mouse_x < plot_x_max &&
+        mouse_y >= plot_y_min && mouse_y < plot_y_max) {
+      mouse_focus = PLOT_FOCUS;
+    } else if (mouse_x >= plot_x_min && mouse_x < plot_x_max && mouse_y >= 0 &&
+               mouse_y < window.getSize().y) {
+      mouse_focus = X_AXIS_FOCUS;
+    } else if (mouse_x >= 0 && mouse_x < window.getSize().x &&
+               mouse_y >= plot_y_min && mouse_y < plot_y_max) {
+      mouse_focus = Y_AXIS_FOCUS;
+    } else {
+      mouse_focus = NONE;
+    }
+  } else {
+    mouse_focus = NONE;
+  }
 }
 
 void application::process_events() {

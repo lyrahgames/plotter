@@ -20,6 +20,7 @@ class application {
   application& execute();
 
  private:
+  void process_mouse();
   void process_events();
   void render();
   void resize();
@@ -45,7 +46,6 @@ class application {
   int mouse_y = 0;
   int mouse_diff_x = 0;
   int mouse_diff_y = 0;
-
   enum {
     NONE,
     PLOT_FOCUS,
