@@ -12,6 +12,7 @@ class application {
   ~application() = default;
 
   application& fit_view();
+  application& fit_aspect_view();
   application& fit_tiks();
   template <typename InputIt1, typename InputIt2>
   application& plot(InputIt1 x_first, InputIt1 x_last, InputIt2 y_first);

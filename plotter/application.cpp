@@ -29,7 +29,27 @@ application& application::fit_view() {
   view_x_max = x_max + 0.2 * (x_max - x_min);
   view_y_min = y_min - 0.2 * (y_max - y_min);
   view_y_max = y_max + 0.2 * (y_max - y_min);
+  update = true;
+  return *this;
+}
 
+application& application::fit_aspect_view() {
+  const auto plot_aspect_ratio =
+      (plot_x_max - plot_x_min) / (plot_y_max - plot_y_min);
+  const auto view_aspect_ratio =
+      (view_x_max - view_x_min) / (view_y_max - view_y_min);
+  if (view_aspect_ratio > plot_aspect_ratio) {
+    const auto origin_y = 0.5f * (view_y_min + view_y_max);
+    auto size_y = (view_x_max - view_x_min) / plot_aspect_ratio;
+    view_y_min = origin_y - 0.5f * size_y;
+    view_y_max = origin_y + 0.5f * size_y;
+  } else {
+    const auto origin_x = 0.5f * (view_x_min + view_x_max);
+    auto size_x = (view_y_max - view_y_min) * plot_aspect_ratio;
+    view_x_min = origin_x - 0.5f * size_x;
+    view_x_max = origin_x + 0.5f * size_x;
+  }
+  update = true;
   return *this;
 }
 
@@ -157,6 +177,9 @@ void application::process_events() {
         switch (event.key.code) {
           case sf::Keyboard::Escape:
             window.close();
+            break;
+          case sf::Keyboard::A:
+            fit_aspect_view();
             break;
         }
         break;
