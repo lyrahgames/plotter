@@ -19,6 +19,6 @@ int main() {
   app  //
        // .plot(begin(x_data), end(x_data), begin(y_data))
        // .plot([](float x) { return sin(2 * x) / x; }, -5.0f, 10.0f, 100)
-      .plot([](float x) { return x * sin(2 * x) + sin(x); }, -10, 10, 1000)
+      .plot([](float x) { return x * sin(2 * x) + sin(x); }, -10, 10, 100)
       .execute();
 }

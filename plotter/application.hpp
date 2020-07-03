@@ -24,12 +24,20 @@ class application {
   void render();
   void resize();
 
+  void draw_plot_background();
+  void draw_tiks();
+  void draw_function();
+  void draw_plot_border();
+
  private:
   sf::RenderWindow window;
   sf::RenderTexture texture;
+
+  bool update = true;
+
   sf::Color background_color{sf::Color::White};
   sf::Color point_color{sf::Color::Black};
-  float point_size = 1.0f;
+  float point_size = 2.0f;
 
   int old_mouse_x = 0;
   int old_mouse_y = 0;
@@ -48,6 +56,9 @@ class application {
   float gridlines_size = 1.0f;
   sf::Color m_gridlines_color{240, 240, 240};
   float m_gridlines_size = 0.8f;
+
+  sf::Color plot_border_color{sf::Color::Black};
+  float plot_border_size = 2.0f;
 
   float plot_pad = 100.0f;
   float plot_x_min = 5.0f;

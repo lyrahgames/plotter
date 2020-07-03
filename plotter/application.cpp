@@ -67,8 +67,6 @@ application& application::execute() {
   fit_view();
 
   while (window.isOpen()) {
-    fit_tiks();
-
     const auto mouse_pos = sf::Mouse::getPosition(window);
     mouse_x = mouse_pos.x;
     mouse_y = mouse_pos.y;
@@ -76,8 +74,14 @@ application& application::execute() {
     mouse_diff_y = mouse_y - old_mouse_y;
 
     process_events();
-    window.clear(background_color);
-    render();
+
+    if (update) {
+      fit_tiks();
+      window.clear(background_color);
+      render();
+      update = false;
+    }
+    // We have to draw every time, such that vsync will prevent full CPU usage.
     window.display();
 
     old_mouse_x = mouse_x;
@@ -110,6 +114,7 @@ void application::process_events() {
         view_x_max = origin_x + 0.5f * scale_x;
         view_y_min = origin_y - 0.5f * scale_y;
         view_y_max = origin_y + 0.5f * scale_y;
+        update = true;
       } break;
 
       case sf::Event::KeyPressed:
@@ -131,16 +136,19 @@ void application::process_events() {
     view_x_max -= move_x;
     view_y_min += move_y;
     view_y_max += move_y;
+    update = true;
   }
 }
 
-void application::render() {
+void application::draw_plot_background() {
   sf::RectangleShape plot_background;
   plot_background.setSize({plot_x_max - plot_x_min, plot_y_max - plot_y_min});
   plot_background.setPosition({plot_x_min, plot_y_min});
   plot_background.setFillColor(plot_background_color);
   window.draw(plot_background);
+}
 
+void application::draw_tiks() {
   int min_x_tic = std::ceil(view_x_min * (x_m_tics + 1) / x_tics);
   int max_x_tic = std::floor(view_x_max * (x_m_tics + 1) / x_tics);
   for (auto i = min_x_tic; i <= max_x_tic; ++i) {
@@ -258,12 +266,10 @@ void application::render() {
     tics_shape.setSize({length, thickness});
     window.draw(tics_shape);
   }
+}
 
-  sf::ContextSettings settings;
-  settings.antialiasingLevel = 8;
-  texture.create(plot_x_max - plot_x_min, plot_y_max - plot_y_min, settings);
+void application::draw_function() {
   texture.clear(sf::Color{0, 0, 0, 0});
-  texture.setSmooth(true);
 
   for (size_t i = 0; i < x_data.size() - 1; ++i) {
     const auto pixel_i = (x_data[i] - view_x_min) / (view_x_max - view_x_min) *
@@ -313,15 +319,23 @@ void application::render() {
   sf::Sprite sprite(texture.getTexture());
   sprite.setPosition(plot_x_min, plot_y_min);
   window.draw(sprite);
+}
 
-  // draw plot border
+void application::draw_plot_border() {
   sf::RectangleShape plot_border;
   plot_border.setSize({plot_x_max - plot_x_min, plot_y_max - plot_y_min});
   plot_border.setPosition({plot_x_min, plot_y_min});
   plot_border.setFillColor(sf::Color{0, 0, 0, 0});
-  plot_border.setOutlineThickness(1.0);
-  plot_border.setOutlineColor(sf::Color::Black);
+  plot_border.setOutlineThickness(plot_border_size);
+  plot_border.setOutlineColor(plot_border_color);
   window.draw(plot_border);
+}
+
+void application::render() {
+  draw_plot_background();
+  draw_tiks();
+  draw_function();
+  draw_plot_border();
 }
 
 void application::resize() {
@@ -333,6 +347,13 @@ void application::resize() {
   plot_y_min = plot_pad;
   plot_x_max = window.getSize().x - plot_pad;
   plot_y_max = window.getSize().y - plot_pad;
+
+  sf::ContextSettings settings;
+  settings.antialiasingLevel = 8;
+  texture.create(plot_x_max - plot_x_min, plot_y_max - plot_y_min, settings);
+  texture.setSmooth(true);
+
+  update = true;
 }
 
 }  // namespace plotter
