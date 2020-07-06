@@ -1,7 +1,9 @@
+#include <chrono>
 #include <iomanip>
 #include <iostream>
 #include <plotter/application.hpp>
 #include <sstream>
+#include <thread>
 
 namespace plotter {
 
@@ -10,7 +12,7 @@ application::application() {
   settings.antialiasingLevel = 8;
   window.create(sf::VideoMode(500, 500), "Plotter", sf::Style::Default,
                 settings);
-  window.setVerticalSyncEnabled(true);
+  window.setVerticalSyncEnabled(false);
 
   if (!font.loadFromFile("font.otf"))
     throw std::runtime_error("Font could not be loaded!");
@@ -87,18 +89,33 @@ application& application::fit_tiks() {
 }
 
 application& application::execute() {
+  using namespace std;
+  using namespace std::chrono;
+
+  constexpr float fps = 60;
+  constexpr float frame_duration = 1 / fps;
+
+  // Do automatic adjustsments before starting to plot.
   fit_view();
+
+  auto old_time = high_resolution_clock::now();
   while (window.isOpen()) {
+    const auto new_time = high_resolution_clock::now();
+    const auto process_duration = duration<float>(new_time - old_time).count();
+    if (process_duration < frame_duration)
+      this_thread::sleep_for(
+          duration<float>(frame_duration - process_duration));
+    old_time = new_time;
+
     process_mouse();
     process_events();
     if (update) {
+      update = false;
       fit_tiks();
       window.clear(background_color);
       render();
-      update = false;
+      window.display();
     }
-    // We have to draw every time, such that vsync will prevent full CPU usage.
-    window.display();
   }
   return *this;
 }
