@@ -8,4 +8,9 @@ url: https://github.com/lyrahgames/plotter
 email: markus.pawellek@mailbox.org
 depends: * build2 >= 0.12.0
 depends: * bpkg >= 0.12.0
+
+requires: c++17
+requires: linux
+requires: gcc | clang
+requires: pthreads
 requires: sfml-graphics ; SFML Graphics Module

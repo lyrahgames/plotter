@@ -2,6 +2,7 @@
 #include <SFML/Graphics.hpp>
 #include <algorithm>
 #include <cmath>
+#include <list>
 #include <vector>
 
 namespace plotter {
@@ -38,8 +39,6 @@ class application {
   bool update = true;
 
   sf::Color background_color{sf::Color::White};
-  sf::Color point_color{sf::Color::Black};
-  float point_size = 2.0f;
 
   int old_mouse_x = 0;
   int old_mouse_y = 0;
@@ -83,10 +82,32 @@ class application {
   size_t x_precision = 2;
   size_t y_precision = 2;
 
+  sf::Font font;
+
+  struct sampled_path {
+    sampled_path() = default;
+    template <typename InputIt1, typename InputIt2>
+    sampled_path(InputIt1 x_first, InputIt1 x_last, InputIt2 y_first);
+    template <typename Function>
+    sampled_path(Function&& f, float min, float max, size_t samples);
+
+    sf::Color point_color{sf::Color::Black};
+    float point_size = 0.0f;
+    sf::Color line_color{sf::Color::Black};
+    float line_size = 1.5f;
+    std::vector<float> x_data{};
+    std::vector<float> y_data{};
+    float x_min;
+    float x_max;
+    float y_min;
+    float y_max;
+  };
+  std::list<sampled_path> sampled_paths{};
+
+  sf::Color point_color{sf::Color::Black};
+  float point_size = 2.0f;
   float line_size = 3;
   sf::Color line_color{sf::Color::Blue};
-
-  sf::Font font;
 
   float x_min = -10.0f;
   float x_max = 10.0f;
@@ -99,6 +120,21 @@ class application {
 template <typename InputIt1, typename InputIt2>
 application& application::plot(InputIt1 x_first, InputIt1 x_last,
                                InputIt2 y_first) {
+  sampled_paths.emplace_back(x_first, x_last, y_first);
+  // x_data.clear();
+  // y_data.clear();
+  // auto x_it = x_first;
+  // auto y_it = y_first;
+  // for (; x_it != x_last; ++x_it, ++y_it) {
+  //   x_data.push_back(*x_it);
+  //   y_data.push_back(*y_it);
+  // }
+  return *this;
+}
+
+template <typename InputIt1, typename InputIt2>
+application::sampled_path::sampled_path(InputIt1 x_first, InputIt1 x_last,
+                                        InputIt2 y_first) {
   x_data.clear();
   y_data.clear();
   auto x_it = x_first;
@@ -107,12 +143,30 @@ application& application::plot(InputIt1 x_first, InputIt1 x_last,
     x_data.push_back(*x_it);
     y_data.push_back(*y_it);
   }
-  return *this;
 }
 
 template <typename Function>
 application& application::plot(Function&& f, float min, float max,
                                size_t samples) {
+  sampled_paths.emplace_back(std::forward<Function>(f), min, max, samples);
+
+  // x_min = min;
+  // x_max = max;
+  // x_data.resize(samples);
+  // y_data.resize(samples);
+  // for (size_t i = 0; i < samples; ++i) {
+  //   const auto scale = static_cast<float>(i) / (samples - 1);
+  //   const auto x = x_min * (1.0f - scale) + x_max * scale;
+  //   const auto y = f(x);
+  //   x_data[i] = x;
+  //   y_data[i] = y;
+  // }
+  return *this;
+}
+
+template <typename Function>
+application::sampled_path::sampled_path(Function&& f, float min, float max,
+                                        size_t samples) {
   x_min = min;
   x_max = max;
   x_data.resize(samples);
@@ -124,7 +178,6 @@ application& application::plot(Function&& f, float min, float max,
     x_data[i] = x;
     y_data[i] = y;
   }
-  return *this;
 }
 
 }  // namespace plotter

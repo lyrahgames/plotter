@@ -21,12 +21,16 @@ application::application() {
 application& application::fit_view() {
   x_min = y_min = INFINITY;
   x_max = y_max = -INFINITY;
-  for (size_t i = 0; i < x_data.size(); ++i) {
-    x_min = std::min(x_min, x_data[i]);
-    x_max = std::max(x_max, x_data[i]);
-    y_min = std::min(y_min, y_data[i]);
-    y_max = std::max(y_max, y_data[i]);
+
+  for (const auto& path : sampled_paths) {
+    for (size_t i = 0; i < path.x_data.size(); ++i) {
+      x_min = std::min(x_min, path.x_data[i]);
+      x_max = std::max(x_max, path.x_data[i]);
+      y_min = std::min(y_min, path.y_data[i]);
+      y_max = std::max(y_max, path.y_data[i]);
+    }
   }
+
   view_x_min = x_min - 0.2 * (x_max - x_min);
   view_x_max = x_max + 0.2 * (x_max - x_min);
   view_y_min = y_min - 0.2 * (y_max - y_min);
@@ -351,48 +355,56 @@ void application::draw_tiks() {
 void application::draw_function() {
   texture.clear(sf::Color{0, 0, 0, 0});
 
-  for (size_t i = 0; i < x_data.size() - 1; ++i) {
-    const auto pixel_i = (x_data[i] - view_x_min) / (view_x_max - view_x_min) *
-                         (plot_x_max - plot_x_min);
-    const auto pixel_j = (view_y_max - y_data[i]) / (view_y_max - view_y_min) *
-                         (plot_y_max - plot_y_min);
+  for (const auto& path : sampled_paths) {
+    for (size_t i = 0; i < path.x_data.size() - 1; ++i) {
+      const auto pixel_i = (path.x_data[i] - view_x_min) /
+                           (view_x_max - view_x_min) *
+                           (plot_x_max - plot_x_min);
+      const auto pixel_j = (view_y_max - path.y_data[i]) /
+                           (view_y_max - view_y_min) *
+                           (plot_y_max - plot_y_min);
 
-    const auto pixel_i1 = (x_data[i + 1] - view_x_min) /
-                          (view_x_max - view_x_min) * (plot_x_max - plot_x_min);
-    const auto pixel_j1 = (view_y_max - y_data[i + 1]) /
-                          (view_y_max - view_y_min) * (plot_y_max - plot_y_min);
+      const auto pixel_i1 = (path.x_data[i + 1] - view_x_min) /
+                            (view_x_max - view_x_min) *
+                            (plot_x_max - plot_x_min);
+      const auto pixel_j1 = (view_y_max - path.y_data[i + 1]) /
+                            (view_y_max - view_y_min) *
+                            (plot_y_max - plot_y_min);
 
-    sf::RectangleShape line;
-    line.setSize({std::sqrt((pixel_i1 - pixel_i) * (pixel_i1 - pixel_i) +
-                            (pixel_j1 - pixel_j) * (pixel_j1 - pixel_j)),
-                  line_size});
-    line.setOrigin(0, 0.5f * line_size);
-    line.rotate(180.0f / M_PI *
-                std::atan((pixel_j1 - pixel_j) / (pixel_i1 - pixel_i)));
-    line.setFillColor(line_color);
-    line.setPosition({pixel_i, pixel_j});
-    texture.draw(line);
+      sf::RectangleShape line;
+      line.setSize({std::sqrt((pixel_i1 - pixel_i) * (pixel_i1 - pixel_i) +
+                              (pixel_j1 - pixel_j) * (pixel_j1 - pixel_j)),
+                    path.line_size});
+      line.setOrigin(0, 0.5f * path.line_size);
+      line.rotate(180.0f / M_PI *
+                  std::atan((pixel_j1 - pixel_j) / (pixel_i1 - pixel_i)));
+      line.setFillColor(path.line_color);
+      line.setPosition({pixel_i, pixel_j});
+      texture.draw(line);
 
-    sf::CircleShape dot{0.5f * line_size};
-    dot.setOrigin(0.5f * line_size, 0.5f * line_size);
-    dot.setPosition(pixel_i, pixel_j);
-    dot.setFillColor(line_color);
-    texture.draw(dot);
-  }
+      sf::CircleShape dot{0.5f * path.line_size};
+      dot.setOrigin(0.5f * path.line_size, 0.5f * path.line_size);
+      dot.setPosition(pixel_i, pixel_j);
+      dot.setFillColor(path.line_color);
+      texture.draw(dot);
+    }
 
-  for (size_t i = 0; i < x_data.size(); ++i) {
-    sf::CircleShape point_shape(point_size);
-    point_shape.setFillColor(point_color);
-    point_shape.setOrigin(point_size, point_size);
+    for (size_t i = 0; i < path.x_data.size(); ++i) {
+      sf::CircleShape point_shape(path.point_size);
+      point_shape.setFillColor(path.point_color);
+      point_shape.setOrigin(path.point_size, path.point_size);
 
-    const auto pixel_i = (x_data[i] - view_x_min) / (view_x_max - view_x_min) *
-                         (plot_x_max - plot_x_min);
+      const auto pixel_i = (path.x_data[i] - view_x_min) /
+                           (view_x_max - view_x_min) *
+                           (plot_x_max - plot_x_min);
 
-    const auto pixel_j = (view_y_max - y_data[i]) / (view_y_max - view_y_min) *
-                         (plot_y_max - plot_y_min);
+      const auto pixel_j = (view_y_max - path.y_data[i]) /
+                           (view_y_max - view_y_min) *
+                           (plot_y_max - plot_y_min);
 
-    point_shape.setPosition({pixel_i, pixel_j});
-    texture.draw(point_shape);
+      point_shape.setPosition({pixel_i, pixel_j});
+      texture.draw(point_shape);
+    }
   }
 
   texture.display();
