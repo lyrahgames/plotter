@@ -1,8 +1,11 @@
 #pragma once
 #include <SFML/Graphics.hpp>
 #include <algorithm>
+#include <atomic>
 #include <cmath>
+#include <future>
 #include <list>
+#include <thread>
 #include <vector>
 
 namespace plotter {
@@ -10,7 +13,7 @@ namespace plotter {
 class application {
  public:
   application();
-  ~application() = default;
+  ~application();
 
   application& fit_view();
   application& fit_aspect_view();
@@ -33,6 +36,7 @@ class application {
   void draw_plot_border();
 
  private:
+  std::future<void> execute_task;
   sf::RenderWindow window;
   sf::RenderTexture texture;
 

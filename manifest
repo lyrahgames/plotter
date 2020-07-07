@@ -6,6 +6,7 @@ license: proprietary
 description-file: README.md
 url: https://github.com/lyrahgames/plotter
 email: markus.pawellek@mailbox.org
+
 depends: * build2 >= 0.12.0
 depends: * bpkg >= 0.12.0
 

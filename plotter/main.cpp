@@ -1,7 +1,4 @@
-#include <atomic>
-#include <iostream>
 #include <plotter/application.hpp>
-#include <thread>
 #include <vector>
 using namespace std;
 
@@ -18,23 +15,11 @@ int main() {
     y_data[i] = y;
   }
 
-  // plotter::application app{};
-  // app  //
-  // .plot(begin(x_data), end(x_data), begin(y_data))
-  // .plot([](float x) { return sin(2 * x) / x; }, -5.0f, 10.0f, 100)
-  // .plot([](float x) { return x * sin(2 * x) + sin(x); }, -10, 10, 100);
-  // .execute();
-  thread t{[&x_data, &y_data]() {
-    plotter::application app{};
-    app.plot([](float x) { return sin(x); }, -7, 7, 100)
-        .plot([](float x) { return sin(x) / x; }, -15, 15, 100)
-        .plot([](float x) { return 0; }, -15, 15, 100)
-        .plot(begin(x_data), end(x_data), begin(y_data))
-        .execute();
-  }};
-  // thread t{[&app]() { app.plot([](float x) { return sin(x); }, -2, 2, 1000);
-  // }};
-  t.join();
-
-  // app.execute();
+  plotter::application app{};
+  app  //
+      .plot([](float x) { return sin(x); }, -7, 7, 100)
+      .plot([](float x) { return sin(x) / x; }, -15, 15, 100)
+      .plot([](float x) { return 0; }, -15, 15, 100)
+      .plot(begin(x_data), end(x_data), begin(y_data))
+      .fit_view();
 }

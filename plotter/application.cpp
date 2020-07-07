@@ -8,15 +8,13 @@
 namespace plotter {
 
 application::application() {
-  sf::ContextSettings settings;
-  settings.antialiasingLevel = 8;
-  window.create(sf::VideoMode(500, 500), "Plotter", sf::Style::Default,
-                settings);
-  window.setVerticalSyncEnabled(false);
-
   if (!font.loadFromFile("font.otf"))
     throw std::runtime_error("Font could not be loaded!");
+
+  execute_task = std::async(std::launch::async, [this]() { execute(); });
 }
+
+application::~application() { execute_task.wait(); }
 
 application& application::fit_view() {
   x_min = y_min = INFINITY;
@@ -98,6 +96,12 @@ application& application::execute() {
 
   constexpr float fps = 60;
   constexpr float frame_duration = 1 / fps;
+
+  sf::ContextSettings settings;
+  settings.antialiasingLevel = 8;
+  window.create(sf::VideoMode(500, 500), "Plotter", sf::Style::Default,
+                settings);
+  window.setVerticalSyncEnabled(false);
 
   // Do automatic adjustsments before starting to plot.
   fit_view();
